@@ -16,7 +16,6 @@ router.post("/add-user", async (req, res) => {
       res.status(400).send("All input is required");
     }
 
-    // check if user already exist
     // Validate if user exist in our database
     const oldUser = await pool.query("SELECT * FROM users WHERE phone_number = $1 AND email = $2", [req.body.contactNo, req.body.email]);
 
@@ -25,7 +24,7 @@ router.post("/add-user", async (req, res) => {
     }
 
     //Encrypt user password
-    const encryptedPassword = await bcrypt.hash(req.body.password, 10);
+    const encryptedPassword = await bcrypt.hash(req.body.password, process.env.SALT_ROUND);
 
     // Create user in our database
     await pool.query(`INSERT INTO users(email,phone_number, password, full_name) VALUES ($1,$2, $3, $4)`, [req.body.email, req.body.contactNo, encryptedPassword, req.body.fullName])
@@ -33,7 +32,7 @@ router.post("/add-user", async (req, res) => {
 
 
     // return new user
-    res.status(201).send(`User created successfully ${user.rows[0].email}`);
+    res.status(201).send(`User created successfully`);
   } catch (err) {
     console.log(err);
   }
@@ -50,14 +49,14 @@ router.post('/login-user', async (req, res) => {
     }
 
     // Validate if user exist in our database
-    // Validate if email and password are valid
+    // Validate if contact number and password are valid
     const validateUser = await pool.query("SELECT * FROM users WHERE phone_number = $1", [req.body.contactNo]);
     if (validateUser.rowCount == 0) {
-      return res.status(409).send("User Not Found. Please Register");
+      return res.status(401).send("Invalid contact number or password.");
     }
 
     const validPassword = await bcrypt.compare(req.body.password, validateUser.rows[0].password);
-    if (!validPassword) return res.status(400).send('Invalid contact number or password.');
+    if (!validPassword) return res.status(401).send('Invalid contact number or password.');
     await pool.query("UPDATE users SET login_by = $1 WHERE email = $2", ["Credentials", validateUser.rows[0].email]);
 
     // Generate token

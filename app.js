@@ -10,8 +10,11 @@ const app = express();
 createTable();
 
 app.use(express.json());
-app.use('/', users);
-app.use('/', orders);
+app.get('/', async (req, res) => {
+    res.send('Shopping App');
+});
+app.use('/user', users);
+app.use('/order', orders);
 
 //Initializing Port
 const port = process.env.PORT || 5000;
